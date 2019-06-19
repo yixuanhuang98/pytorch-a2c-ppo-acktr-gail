@@ -1,6 +1,6 @@
 import argparse
 import os
-# workaround to unpickle olf model files
+# worikoooaround to unpickle olf model files
 import sys
 
 import numpy as np
