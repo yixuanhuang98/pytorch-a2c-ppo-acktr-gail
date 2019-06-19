@@ -227,3 +227,15 @@ class MLPBase(NNBase):
         hidden_actor = self.actor(x)
 
         return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+
+class Net(torch.nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.hidden = torch.nn.Linear(4, 20)   # hidden layer
+        self.predict = torch.nn.Linear(20, 3)   # output layer
+
+    def forward(self, x):
+        x = F.relu(self.hidden(x))      # activation function for hidden layer
+        x = self.predict(x)             # linear output
+        return x
+

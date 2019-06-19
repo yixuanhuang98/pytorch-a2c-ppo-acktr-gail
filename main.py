@@ -18,6 +18,8 @@ from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
+from a2c_ppo_acktr.model import Net
+
 
 
 def main():
@@ -40,12 +42,16 @@ def main():
 
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, args.log_dir, device, False)
-
+    print('lod_dir')
+    print(args.log_dir)
+    # actor_critic_safe, ob_rms = \
+    #         torch.load(os.path.join(args.load_dir, args.env_name + ".pt"))
     actor_critic = Policy(
         envs.observation_space.shape,
         envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
+    net = Net()
 
     if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
@@ -58,6 +64,7 @@ def main():
             max_grad_norm=args.max_grad_norm)
     elif args.algo == 'ppo':
         agent = algo.PPO(
+            net,
             actor_critic,
             args.clip_param,
             args.ppo_epoch,
@@ -114,6 +121,14 @@ def main():
                 value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
                     rollouts.obs[step], rollouts.recurrent_hidden_states[step],
                     rollouts.masks[step])
+            # print('state')
+            # print(obs.size())
+            # print('action')
+            # print(action.size())
+            input_layer = torch.cat([obs,action], 1)
+            #print(input_layer.size())
+            
+            next_state_pred = net(input_layer)
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(action)
@@ -128,7 +143,7 @@ def main():
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
-            rollouts.insert(obs, recurrent_hidden_states, action,
+            rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
                             action_log_prob, value, reward, masks, bad_masks)
 
         with torch.no_grad():
@@ -155,7 +170,7 @@ def main():
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
 
-        value_loss, action_loss, dist_entropy = agent.update(rollouts)
+        value_loss, action_loss, dist_entropy, prediction_loss = agent.update(rollouts)
 
         rollouts.after_update()
 
@@ -173,6 +188,11 @@ def main():
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, args.env_name + ".pt"))
 
+            # torch.save([
+            #     actor_critic,
+            #     getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
+            # ], '/home/guest/pytorch-a2c-ppo-acktr-gail/trained_models/ppo/RacecarBulletEnv-v0-init-1-2.pt')
+
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
@@ -184,6 +204,8 @@ def main():
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
                         action_loss))
+            print('prediction loss')
+            print(prediction_loss)
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
