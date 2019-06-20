@@ -20,6 +20,7 @@ class PPO():
                  use_clipped_value_loss=True):
 
         self.actor_critic = actor_critic
+        self.net = net
 
         self.clip_param = clip_param
         self.ppo_epoch = ppo_epoch
@@ -63,8 +64,9 @@ class PPO():
                 values, action_log_probs, dist_entropy, _ = self.actor_critic.evaluate_actions(
                     obs_batch, recurrent_hidden_states_batch, masks_batch,
                     actions_batch)
-                loss_fn = torch.nn.MSELoss(reduce=True, size_average=True)
-                prediction_loss = loss_fn(next_obs_batch, next_obs_pred_batch)
+                # loss_fn = torch.nn.MSELoss(reduce=True, size_average=True)
+                # prediction_loss = loss_fn(next_obs_batch, next_obs_pred_batch)
+                prediction_loss = (next_obs_batch - next_obs_pred_batch).pow(2).mean()
                 #print(prediction_loss.size())
 
                 ratio = torch.exp(action_log_probs -
@@ -97,6 +99,8 @@ class PPO():
 
                 self.optimizer_pred.zero_grad()
                 prediction_loss.backward(retain_graph=True)
+                nn.utils.clip_grad_norm_(self.net.parameters(),
+                                         self.max_grad_norm)
                 self.optimizer_pred.step()
 
 
