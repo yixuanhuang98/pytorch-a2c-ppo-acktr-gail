@@ -14,7 +14,7 @@ import torch.optim as optim
 from a2c_ppo_acktr import algo, utils
 from a2c_ppo_acktr.algo import gail
 from a2c_ppo_acktr.arguments import get_args
-from a2c_ppo_acktr.envs import make_vec_envs
+from a2c_ppo_acktr.envs import make_vec_envs,make_env
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
@@ -39,9 +39,10 @@ def main():
 
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
-
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
+    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, 
                          args.gamma, args.log_dir, device, False)
+    # envs = make_env(args.env_name, args.seed,
+    #                      args.gamma, args.log_dir,  False)
     print('lod_dir')
     print(args.log_dir)
     # actor_critic_safe, ob_rms = \
@@ -131,6 +132,39 @@ def main():
             next_state_pred = net(input_layer)
 
             # Obser reward and next obs
+            # print('action')
+            # print(action)
+            # print('obs')
+            # print(obs.size())
+
+            # mpc function
+            test_cases = 100
+            action_horizon = 3
+            action_size = 2
+            total_reward_list = []
+            total_reward = 0
+            test_action = np.random.uniform(-1,1,(test_cases,action_horizon,1,action_size))
+            test_action.astype(float)
+            for i in range(test_cases):
+                for j in range(action_horizon):
+                    action = torch.from_numpy(test_action[i,j])
+                    action = action.float()
+                    # print(action.dtype)
+                    # print(obs.dtype)
+                    input_layer_state = torch.cat([obs,action], 1)
+                    obs = net(input_layer_state)
+                    #obs_data = obs.numpy()
+                    # we might consider some rewards at now
+                    total_reward += 10*(-5-obs[0][0].item())
+                    total_reward += -3*(abs(obs[0][1].item()))
+                total_reward_list.append(total_reward)
+            index = total_reward_list.index(max(total_reward_list))
+            action_numpy = test_action[index, 0]
+            action = torch.from_numpy(action_numpy)
+            # reward = 10*(-5-carpos[0]) # the reward at the racecar and might do something with field
+            
+            # end mpc function
+            
             obs, reward, done, infos = envs.step(action)
 
             for info in infos:
@@ -173,7 +207,6 @@ def main():
         value_loss, action_loss, dist_entropy, prediction_loss = agent.update(rollouts)
 
         rollouts.after_update()
-        torch.save(net, "./pred_model/nn.pt")
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
