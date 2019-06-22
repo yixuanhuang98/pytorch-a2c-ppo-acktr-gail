@@ -3,6 +3,8 @@
 ## Please use hyper parameters from this readme. With other hyper parameters things might not work (it's RL after all)!
 
 python main.py --env-name "RacecarBulletEnv-v0" --log-dir /tmp --no-cuda --algo ppo --num-processes 1 --num-steps 32
+
+
 python main_mpc.py --env-name "RacecarBulletEnv-v0" --log-dir /tmp --no-cuda --algo ppo --num-processes 1 --num-steps 32
 
 This is a PyTorch implementation of
