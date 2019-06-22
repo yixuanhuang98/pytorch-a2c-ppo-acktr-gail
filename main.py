@@ -127,8 +127,12 @@ def main():
             # print(action.size())
             input_layer = torch.cat([obs,action], 1)
             #print(input_layer.size())
+            model_dict=torch.load("./pred_model/nn.pt")
+
             
-            next_state_pred = net(input_layer)
+            next_state_pred = model_dict(input_layer)
+            # print('next_state_pred')
+            # print(next_state_pred)
 
             # Obser reward and next obs
             obs, reward, done, infos = envs.step(action)
@@ -173,7 +177,7 @@ def main():
         value_loss, action_loss, dist_entropy, prediction_loss = agent.update(rollouts)
 
         rollouts.after_update()
-        torch.save(net, "./pred_model/nn.pt")
+        #torch.save(net, "./pred_model/nn.pt")
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0

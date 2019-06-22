@@ -53,6 +53,10 @@ def main():
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
     net = Net()
+    model_dict=torch.load("./pred_model/nn.pt")
+
+            
+    
 
     if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
@@ -136,31 +140,31 @@ def main():
             # print(action)
             # print('obs')
             # print(obs.size())
-
+            if(abs(obs[0][1].item()) > 1):
             # mpc function
-            test_cases = 100
-            action_horizon = 3
-            action_size = 2
-            total_reward_list = []
-            total_reward = 0
-            test_action = np.random.uniform(-1,1,(test_cases,action_horizon,1,action_size))
-            test_action.astype(float)
-            for i in range(test_cases):
-                for j in range(action_horizon):
-                    action = torch.from_numpy(test_action[i,j])
-                    action = action.float()
-                    # print(action.dtype)
-                    # print(obs.dtype)
-                    input_layer_state = torch.cat([obs,action], 1)
-                    obs = net(input_layer_state)
-                    #obs_data = obs.numpy()
-                    # we might consider some rewards at now
-                    total_reward += 10*(-5-obs[0][0].item())
-                    total_reward += -3*(abs(obs[0][1].item()))
-                total_reward_list.append(total_reward)
-            index = total_reward_list.index(max(total_reward_list))
-            action_numpy = test_action[index, 0]
-            action = torch.from_numpy(action_numpy)
+                test_cases = 100
+                action_horizon = 3
+                action_size = 2
+                total_reward_list = []
+                total_reward = 0
+                test_action = np.random.uniform(-1,1,(test_cases,action_horizon,1,action_size))
+                test_action.astype(float)
+                for i in range(test_cases):
+                    for j in range(action_horizon):
+                        action = torch.from_numpy(test_action[i,j])
+                        action = action.float()
+                        # print(action.dtype)
+                        # print(obs.dtype)
+                        input_layer_state = torch.cat([obs,action], 1)
+                        obs = model_dict(input_layer_state)
+                        #obs_data = obs.numpy()
+                        # we might consider some rewards at now
+                        total_reward += 10*(-5-obs[0][0].item())
+                        total_reward += -3*(abs(obs[0][1].item()))
+                    total_reward_list.append(total_reward)
+                index = total_reward_list.index(max(total_reward_list))
+                action_numpy = test_action[index, 0]
+                action = torch.from_numpy(action_numpy)
             # reward = 10*(-5-carpos[0]) # the reward at the racecar and might do something with field
             
             # end mpc function
