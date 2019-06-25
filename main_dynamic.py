@@ -52,6 +52,7 @@ def main():
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
     net = Net()
+    optimizer = optim.Adam(net.parameters(), lr = args.lr, eps = args.eps)
 
     if args.algo == 'a2c':
         agent = algo.A2C_ACKTR(
@@ -130,38 +131,19 @@ def main():
             #model_dict=torch.load("./pred_model/nn.pt")
 
             
-            next_state_pred_delta = net(input_layer)
-            next_state_pred = obs + next_state_pred_delta
+            next_state_pred = net(input_layer)
             # print('next_state_pred')
             # print(next_state_pred)
 
             # Obser reward and next obs
-            # test_cases = 100
-            # action_horizon = 5
-            # action_size = 2
-            # total_reward_list = []
-            # total_reward = 0
-            # test_action = np.random.uniform(-1,1,(test_cases,action_horizon,1,action_size))
-            # test_action.astype(float)
-            # for i in range(test_cases):
-            #     for j in range(action_horizon):
-            #         action = torch.from_numpy(test_action[i,j])
-            #         action = action.float()
-            #         # print(action.dtype)
-            #         # print(obs.dtype)
-            #         input_layer_state = torch.cat([obs,action], 1)
-            #         obs = net(input_layer_state)
-            #         #obs_data = obs.numpy()
-            #         # we might consider some rewards at now
-            #         total_reward += 10*(-5-obs[0][0].item())
-            #         total_reward += -10*(abs(obs[0][1].item()))
-            #     total_reward_list.append(total_reward)
-            # index = total_reward_list.index(max(total_reward_list))
-            # action_numpy = test_action[index, 0]
-            # action = torch.from_numpy(action_numpy)
-
-
             obs, reward, done, infos = envs.step(action)
+            
+            #prediction_loss = (obs - next_state_pred).pow(2).mean()
+
+
+
+
+
 
             for info in infos:
                 if 'episode' in info.keys():
@@ -204,7 +186,7 @@ def main():
         print('prediction_loss')
         print(prediction_loss)
         rollouts.after_update()
-        torch.save(net, "./pred_model/nn_racecar.pt")
+        torch.save(net, "./pred_model/nn2.pt")
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0

@@ -228,25 +228,48 @@ class MLPBase(NNBase):
 
         return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
 
+# class Net(torch.nn.Module):    # works good for racecar at now  linear lol
+#     def __init__(self):
+#         super(Net, self).__init__()
+#         self.hidden = torch.nn.Linear(4, 50)   # hidden layer
+#         self.predict = torch.nn.Linear(50, 2)   # output layer
+
+#     def forward(self, x):
+#         x = (self.hidden(x))      # activation function for hidden layer
+#         x = self.predict(x)             # linear output
+#         return x
+
 class Net(torch.nn.Module):    # works good for racecar at now
     def __init__(self):
         super(Net, self).__init__()
-        self.hidden = torch.nn.Linear(4, 20)   # hidden layer
-        self.predict = torch.nn.Linear(20, 2)   # output layer
+        self.hidden = torch.nn.Linear(4, 50)   # hidden layer
+        self.hidden1 = torch.nn.Linear(50,50)
+        self.predict = torch.nn.Linear(50, 2)   # output layer
 
     def forward(self, x):
         x = F.relu(self.hidden(x))      # activation function for hidden layer
+        x = F.relu(self.hidden1(x))
         x = self.predict(x)             # linear output
         return x
 
 # class Net(torch.nn.Module):     # works good for pendulum
 #     def __init__(self):
 #         super(Net, self).__init__()
-#         self.hidden = torch.nn.Linear(4, 20)   # hidden layer
-#         self.predict = torch.nn.Linear(20, 3)   # output layer
+#         self.hidden = torch.nn.Linear(4, 50)   # hidden layer
+#         self.predict = torch.nn.Linear(50, 3)   # output layer
 
 #     def forward(self, x):
 #         x = F.relu(self.hidden(x))      # activation function for hidden layer
 #         x = self.predict(x)             # linear output
 #         return x
 
+# class Net(torch.nn.Module):    # works good for Halfcheeta at now
+#     def __init__(self):
+#         super(Net, self).__init__()
+#         self.hidden = torch.nn.Linear(23, 500)   # hidden layer
+#         self.predict = torch.nn.Linear(500, 17)   # output layer
+
+#     def forward(self, x):
+#         x = F.relu(self.hidden(x))      # activation function for hidden layer
+#         x = self.predict(x)             # linear output
+#         return x

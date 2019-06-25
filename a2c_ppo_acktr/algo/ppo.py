@@ -32,7 +32,7 @@ class PPO():
         self.max_grad_norm = max_grad_norm
         self.use_clipped_value_loss = use_clipped_value_loss
 
-        self.optimizer = optim.Adam(actor_critic.parameters(), lr=lr, eps=eps)
+        #self.optimizer = optim.Adam(actor_critic.parameters(), lr=lr, eps=eps)
         self.optimizer_pred = optim.Adam(net.parameters(), lr = lr, eps = eps)
 
     def update(self, rollouts):
@@ -54,6 +54,7 @@ class PPO():
             else:
                 data_generator = rollouts.feed_forward_generator(
                     advantages, self.num_mini_batch)
+                #print('feed forward')
 
             for sample in data_generator:
                 obs_batch, next_obs_batch, next_obs_pred_batch, recurrent_hidden_states_batch, actions_batch, \
@@ -90,15 +91,15 @@ class PPO():
                 # print(value_loss)
                 # print('action loss size')
                 # print(action_loss)
-                self.optimizer.zero_grad()
-                (value_loss * self.value_loss_coef + action_loss -
-                 dist_entropy * self.entropy_coef).backward(retain_graph = True)
-                nn.utils.clip_grad_norm_(self.actor_critic.parameters(),
-                                         self.max_grad_norm)
-                self.optimizer.step()
+                # self.optimizer.zero_grad()
+                # (value_loss * self.value_loss_coef + action_loss -
+                #  dist_entropy * self.entropy_coef).backward(retain_graph = True)
+                # nn.utils.clip_grad_norm_(self.actor_critic.parameters(),
+                #                          self.max_grad_norm)
+                # self.optimizer.step()
 
                 self.optimizer_pred.zero_grad()
-                prediction_loss.backward(retain_graph=True)
+                prediction_loss.backward(retain_graph = True)
                 nn.utils.clip_grad_norm_(self.net.parameters(),
                                          self.max_grad_norm)
                 self.optimizer_pred.step()

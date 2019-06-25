@@ -53,7 +53,7 @@ def main():
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
     net = Net()
-    model_dict=torch.load("./pred_model/nn.pt")
+    model_dict=torch.load("./pred_model/nn2.pt")
 
             
     
@@ -108,6 +108,7 @@ def main():
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10)
+    max_value = -1
 
     start = time.time()
     num_updates = int(
@@ -142,8 +143,14 @@ def main():
             # print(obs.size())
             if(abs(obs[0][1].item()) > 1):
             # mpc function
-                test_cases = 100
-                action_horizon = 3
+                # print('enter mpc')
+                # print(obs[0][1].item())
+                if(abs(obs[0][1].item()) > max_value):
+                    max_value = abs(obs[0][1].item())
+                if(max_value == abs(obs[0][1].item())):
+                    print(max_value)
+                test_cases = 1000
+                action_horizon = 10
                 action_size = 2
                 total_reward_list = []
                 total_reward = 0
@@ -160,7 +167,7 @@ def main():
                         #obs_data = obs.numpy()
                         # we might consider some rewards at now
                         total_reward += 10*(-5-obs[0][0].item())
-                        total_reward += -3*(abs(obs[0][1].item()))
+                        total_reward += -10000*(abs(obs[0][1].item()))
                     total_reward_list.append(total_reward)
                 index = total_reward_list.index(max(total_reward_list))
                 action_numpy = test_action[index, 0]
@@ -181,6 +188,10 @@ def main():
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
+            print('obs')
+            print(obs)
+            print('next_state')
+            print(next_state_pred)
             rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
                             action_log_prob, value, reward, masks, bad_masks)
 
