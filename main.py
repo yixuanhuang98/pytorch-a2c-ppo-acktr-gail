@@ -107,6 +107,7 @@ def main():
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
+    pred_total_loss = []
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -203,6 +204,8 @@ def main():
         value_loss, action_loss, dist_entropy, prediction_loss = agent.update(rollouts)
         print('prediction_loss')
         print(prediction_loss)
+        pred_total_loss.append(prediction_loss)
+
         rollouts.after_update()
         torch.save(net, "./pred_model/nn_racecar.pt")
 
@@ -219,6 +222,7 @@ def main():
                 actor_critic,
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, args.env_name + ".pt"))
+            np.savetxt('/home/guest/txt_result/mpc.txt')
 
             # torch.save([
             #     actor_critic,
