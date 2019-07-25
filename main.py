@@ -222,7 +222,7 @@ def main():
                 actor_critic,
                 getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
             ], os.path.join(save_path, args.env_name + ".pt"))
-            np.savetxt('/home/guest/txt_result/mpc.txt')
+            np.savetxt('/home/gao-4144/txt_result/mpc.txt')
 
             # torch.save([
             #     actor_critic,
