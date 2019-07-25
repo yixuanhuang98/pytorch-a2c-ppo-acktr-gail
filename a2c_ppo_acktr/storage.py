@@ -55,7 +55,7 @@ class RolloutStorage(object):
                value_preds, rewards, masks, bad_masks):
         # if(self.step + 1 == self.num_steps):
         #     return 
-        self.total_next_obs.append(next_obs)
+        self.total_next_obs.append(obs)
         self.total_actions.append(actions)
         self.total_next_obs_pred.append(next_obs_pred)
         self.obs[self.step + 1].copy_(obs)
