@@ -239,13 +239,28 @@ class MLPBase(NNBase):
 #         x = self.predict(x)             # linear output
 #         return x
 
-class Net(torch.nn.Module):    # works good for racecar at now
+# class Net(torch.nn.Module):    # works good for racecar at now
+#     def __init__(self):
+#         super(Net, self).__init__()
+#         self.hidden = torch.nn.Linear(8, 500)   # hidden layer
+#         self.hidden1 = torch.nn.Linear(500,500)
+#         #self.hidden2 = torch.nn.Linear(50,50)
+#         self.predict = torch.nn.Linear(500, 6)   # output layer
+
+#     def forward(self, x):
+#         x = F.relu(self.hidden(x))      # activation function for hidden layer
+#         x = F.relu(self.hidden1(x))
+#         #x = F.relu(self.hidden2(x))
+#         x = self.predict(x)             # linear output
+#         return x
+
+class Net(torch.nn.Module):    # works good for halfcheetah at now
     def __init__(self):
         super(Net, self).__init__()
-        self.hidden = torch.nn.Linear(8, 500)   # hidden layer
-        self.hidden1 = torch.nn.Linear(500,500)
+        self.hidden = torch.nn.Linear(23, 256)   # hidden layer
+        self.hidden1 = torch.nn.Linear(256,256)
         #self.hidden2 = torch.nn.Linear(50,50)
-        self.predict = torch.nn.Linear(500, 6)   # output layer
+        self.predict = torch.nn.Linear(256, 17)   # output layer
 
     def forward(self, x):
         x = F.relu(self.hidden(x))      # activation function for hidden layer
