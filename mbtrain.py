@@ -33,10 +33,11 @@ def normalize(horizon_array,i):
 def load(data_dir, args):
     # Ss = np.load(data_dir+"obs_"+args.env_name+".npy")
     # As = np.load(data_dir+"ac_"+args.env_name+".npy")
-    #array = np.loadtxt('/Users/huangyixuan/txt_result/t')
+    #array = np.loadtxt('/Users/huangyixuan/txt_result/test_big')
+    array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_10')
     #array = np.loadtxt('/home/gao-4144/txt_result/test_1')
     #array = np.loadtxt('/Users/huangyixuan/txt_result/halfcheetah_test')
-    array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_7_new')
+    #array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_7_new')
     # for i in range(8):
     #     array[:,i] = normalize(array[:,i],i)
     print(array.shape)
