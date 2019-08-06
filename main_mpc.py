@@ -17,6 +17,7 @@ from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs,make_env
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
+from a2c_ppo_acktr.MBmodelProb import Model
 from evaluation import evaluate
 from a2c_ppo_acktr.model import Net
 
@@ -53,8 +54,8 @@ def main():
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
     net = Net()
-    model_dict=torch.load("./pred_model/nn2.pt")
-
+    #model_dict=torch.load("./pred_model/nn2.pt")
+    pred_model = torch.load(os.path.join("./trained_models/mb", args.env_name + ".pt"))
             
     
 
@@ -129,12 +130,13 @@ def main():
                     rollouts.masks[step])
             # print('state')
             # print(obs.size())
+            # print(rollouts.obs)
             # print('action')
             # print(action.size())
             input_layer = torch.cat([obs,action], 1)
             #print(input_layer.size())
             
-            next_state_pred = net(input_layer)
+            next_state_pred = pred_model.predict(input_layer, deterministic=True)
 
             # Obser reward and next obs
             # print('action')
@@ -156,22 +158,22 @@ def main():
                 total_reward = 0
                 test_action = np.random.uniform(-1,1,(test_cases,action_horizon,1,action_size))
                 test_action.astype(float)
-                for i in range(test_cases):
-                    for j in range(action_horizon):
-                        action = torch.from_numpy(test_action[i,j])
-                        action = action.float()
-                        # print(action.dtype)
-                        # print(obs.dtype)
-                        input_layer_state = torch.cat([obs,action], 1)
-                        obs = model_dict(input_layer_state)
-                        #obs_data = obs.numpy()
-                        # we might consider some rewards at now
-                        total_reward += 10*(-5-obs[0][0].item())
-                        total_reward += -10000*(abs(obs[0][1].item()))
-                    total_reward_list.append(total_reward)
-                index = total_reward_list.index(max(total_reward_list))
-                action_numpy = test_action[index, 0]
-                action = torch.from_numpy(action_numpy)
+                # for i in range(test_cases):
+                #     for j in range(action_horizon):
+                #         action = torch.from_numpy(test_action[i,j])
+                #         action = action.float()
+                #         # print(action.dtype)
+                #         # print(obs.dtype)
+                #         input_layer_state = torch.cat([obs,action], 1)
+                #         obs = pred_model.predict(input_layer_state, deterministic=True)
+                #         #obs_data = obs.numpy()
+                #         # we might consider some rewards at now
+                #         total_reward += 10*(-5-obs[0][0].item())
+                #         total_reward += -10000*(abs(obs[0][1].item()))
+                #     total_reward_list.append(total_reward)
+                #index = total_reward_list.index(max(total_reward_list))
+                # action_numpy = test_action[index, 0]
+                # action = torch.from_numpy(action_numpy)
             # reward = 10*(-5-carpos[0]) # the reward at the racecar and might do something with field
             
             # end mpc function
@@ -188,9 +190,9 @@ def main():
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
-            print('obs')
+            print('next_obs')
             print(obs)
-            print('next_state')
+            print('next_state_pred')
             print(next_state_pred)
             rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
                             action_log_prob, value, reward, masks, bad_masks)

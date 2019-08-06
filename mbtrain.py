@@ -19,10 +19,26 @@ from a2c_ppo_acktr.MBmodelProb import Model
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
 
+mu_array = np.zeros((8,1))
+sigma_array = np.zeros((8,1))
+
+def normalize(horizon_array,i):
+    mu = np.mean(horizon_array)
+    sigma = np.std(horizon_array)
+    mu_array[i] = mu
+    sigma_array[i] = sigma
+    horizon_array = (horizon_array - mu) / sigma
+    return horizon_array
+
 def load(data_dir, args):
     # Ss = np.load(data_dir+"obs_"+args.env_name+".npy")
     # As = np.load(data_dir+"ac_"+args.env_name+".npy")
-    array = np.loadtxt('/Users/huangyixuan/txt_result/test_1')
+    #array = np.loadtxt('/Users/huangyixuan/txt_result/t')
+    #array = np.loadtxt('/home/gao-4144/txt_result/test_1')
+    #array = np.loadtxt('/Users/huangyixuan/txt_result/halfcheetah_test')
+    array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_7_new')
+    # for i in range(8):
+    #     array[:,i] = normalize(array[:,i],i)
     print(array.shape)
     Ss = array[:,:6]
     As = array[:,-2:]
@@ -140,9 +156,9 @@ def main():
         test_error = loss_criterian(model.predict(x, deterministic=True), y)
 
         errors.append(test_error)
-        if len(errors) > 20:
-            if errors[-1] > errors[-2] and  errors[-2] > errors[-3]:
-                break
+        # if len(errors) > 20:
+        #     if errors[-1] > errors[-2] and  errors[-2] > errors[-3]:
+        #         break
 
 
         print("iteration:{}, loss:{}, test error: {}".format(i, np.asarray(losses).mean(), test_error))
