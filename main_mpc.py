@@ -23,6 +23,18 @@ from a2c_ppo_acktr.model import Net
 
 
 
+def get_normalize():
+    mu_array = np.zeros((8,1))
+    sigma_array = np.zeros((8,1))
+    array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_10')
+    for i in range(8):
+        mu_array[i] = np.mean(array[:,i])
+        sigma_array[i] = np.std(array[:,i])
+    return mu_array, sigma_array
+
+
+
+
 def main():
     args = get_args()
 
@@ -55,7 +67,8 @@ def main():
     actor_critic.to(device)
     net = Net()
     #model_dict=torch.load("./pred_model/nn2.pt")
-    pred_model = torch.load(os.path.join("./trained_models/mb", args.env_name + ".pt"))
+    pred_models = torch.load(os.path.join("./trained_models/mb", args.env_name + ".pt"))
+    #print(pred_model)
             
     
 
@@ -114,6 +127,7 @@ def main():
     start = time.time()
     num_updates = int(
         args.num_env_steps) // args.num_steps // args.num_processes
+    mu_array, sigma_array = get_normalize()
     for j in range(num_updates):
 
         if args.use_linear_lr_decay:
@@ -133,10 +147,20 @@ def main():
             # print(rollouts.obs)
             # print('action')
             # print(action.size())
+            #print(obs.detach().numpy()[0][1:])
+            output_states_num = 6
+            total_models = 5
+            obs_numpy = np.zeros((1,output_states_num))
+            obs_numpy[0] = (obs.detach().numpy()[0][:])
+            obs = torch.from_numpy(obs_numpy).float()
+            # print(obs_numpy)
+            # print(action)
             input_layer = torch.cat([obs,action], 1)
             #print(input_layer.size())
-            
-            next_state_pred = pred_model.predict(input_layer, deterministic=True)
+            next_state_pred = np.zeros((1,output_states_num))
+            for pred_model in pred_models:
+                next_state_pred += pred_model.predict(input_layer, deterministic=True).detach().numpy()[0]
+            next_state_pred /= total_models
 
             # Obser reward and next obs
             # print('action')
@@ -190,12 +214,22 @@ def main():
             bad_masks = torch.FloatTensor(
                 [[0.0] if 'bad_transition' in info.keys() else [1.0]
                  for info in infos])
-            print('next_obs')
-            print(obs)
+            next_obs_numpy = obs.detach().numpy()[0][:]
+            # next_obs_numpy[0] = (next_obs_numpy[0]-mu_array[0])/sigma_array[0]
+            # next_obs_numpy[1] = (next_obs_numpy[1]-mu_array[1])/sigma_array[1]
+            # print('next_obs')
+            # print(obs)
+            print('next_obs_numpy')
+            print(next_obs_numpy)
+            next_state_pred_numpy = next_state_pred #.detach().numpy()[0]
+            # print('next_state_pred')
+            # print(next_state_pred_numpy)
+            # next_state_pred_numpy[0] = (next_state_pred_numpy[0]*sigma_array[0] + mu_array[0])
+            # next_state_pred_numpy[1] = (next_state_pred_numpy[1]*sigma_array[1] + mu_array[1])
             print('next_state_pred')
-            print(next_state_pred)
-            rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
-                            action_log_prob, value, reward, masks, bad_masks)
+            print(next_state_pred_numpy)
+            # rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
+            #                 action_log_prob, value, reward, masks, bad_masks)
 
         with torch.no_grad():
             next_value = actor_critic.get_value(

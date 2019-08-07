@@ -38,8 +38,8 @@ def load(data_dir, args):
     #array = np.loadtxt('/home/gao-4144/txt_result/test_1')
     #array = np.loadtxt('/Users/huangyixuan/txt_result/halfcheetah_test')
     #array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_7_new')
-    # for i in range(8):
-    #     array[:,i] = normalize(array[:,i],i)
+    for i in range(0):
+        array[:,i] = normalize(array[:,i],i)
     print(array.shape)
     Ss = array[:,:6]
     As = array[:,-2:]
@@ -118,12 +118,17 @@ def main():
     test_SPs = SPs[train_index:]
     SAs= SAs[:train_index]
     SPs = SPs[:train_index]
-
+    total_models = 5
     errors = []
+    models = [Model(
+        envs.observation_space.shape,
+        envs.action_space,
+        base_kwargs={'recurrent': args.recurrent_policy}) for i in range(total_models)]
+
 
 
     for i in range(num_updates):
-        optimizer = optim.Adam(model.parameters(), lr=0.01/(i+1), eps=1e-5)
+        optimizer = optim.Adam([{"params":model.parameters()} for model in models], lr=0.01/(i+1), eps=1e-5)
         length = SAs.shape[0]
         shuffle = np.random.permutation(length)
         SAs = SAs[shuffle]
@@ -139,11 +144,13 @@ def main():
                 x = torch.tensor(SAs[j*batch_size:(j+1)*batch_size]).float()
                 y = torch.tensor(SPs[j*batch_size:(j+1)*batch_size]).float()
 
-            log_prob = model.evaluate(x,y)
-            loss = -log_prob.mean()
+            
 
             optimizer.zero_grad()
-            loss.backward()
+            for model in models:
+                log_prob = model.evaluate(x,y)
+                loss = -log_prob.mean()
+                loss.backward()
             optimizer.step()
             losses.append(loss.item())
 
@@ -153,19 +160,20 @@ def main():
         else:
             x = torch.tensor(test_SAs).float()
             y = torch.tensor(test_SPs).float()
-
-        test_error = loss_criterian(model.predict(x, deterministic=True), y)
-
+        test_error = 0
+        for model in models:
+            test_error = test_error + loss_criterian(model.predict(x, deterministic=True), y)
+        test_error = test_error / total_models
         errors.append(test_error)
-        # if len(errors) > 20:
-        #     if errors[-1] > errors[-2] and  errors[-2] > errors[-3]:
-        #         break
+        if len(errors) > 40:
+            if errors[-1] > errors[-2] and  errors[-2] > errors[-3]:
+                break
 
 
         print("iteration:{}, loss:{}, test error: {}".format(i, np.asarray(losses).mean(), test_error))
 
     torch.save(
-        model,
+        models,
      os.path.join("./trained_models/mb", args.env_name + ".pt"))
 
 if __name__ == "__main__":
