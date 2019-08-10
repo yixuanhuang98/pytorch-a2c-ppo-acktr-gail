@@ -149,7 +149,7 @@ def main():
             # print(action.size())
             #print(obs.detach().numpy()[0][1:])
             output_states_num = 6
-            total_models = 5
+            total_models = 3
             obs_numpy = np.zeros((1,output_states_num))
             obs_numpy[0] = (obs.detach().numpy()[0][:])
             obs = torch.from_numpy(obs_numpy).float()
@@ -157,47 +157,55 @@ def main():
             # print(action)
             input_layer = torch.cat([obs,action], 1)
             #print(input_layer.size())
-            next_state_pred = np.zeros((1,output_states_num))
+            next_state_pred_numpy = np.zeros((1,output_states_num))
             for pred_model in pred_models:
-                next_state_pred += pred_model.predict(input_layer, deterministic=True).detach().numpy()[0]
-            next_state_pred /= total_models
+                next_state_pred_numpy += pred_model.predict(input_layer, deterministic=True).detach().numpy()[0]
+            next_state_pred_numpy /= total_models
+            next_state_pred = torch.from_numpy(next_state_pred_numpy)
+            #print(next_state_pred)
 
             # Obser reward and next obs
-            # print('action')
-            # print(action)
-            # print('obs')
-            # print(obs.size())
-            if(abs(obs[0][1].item()) > 1):
+            print('action')
+            print(action)
+            print('obs')
+            print(obs)
+            # if(abs(obs[0][1].item()) > 1):
             # mpc function
                 # print('enter mpc')
                 # print(obs[0][1].item())
+            if True:
                 if(abs(obs[0][1].item()) > max_value):
                     max_value = abs(obs[0][1].item())
                 if(max_value == abs(obs[0][1].item())):
                     print(max_value)
-                test_cases = 1000
-                action_horizon = 10
+                test_cases = 100
+                action_horizon = 1
                 action_size = 2
                 total_reward_list = []
                 total_reward = 0
-                test_action = np.random.uniform(-1,1,(test_cases,action_horizon,1,action_size))
+                test_action = np.random.uniform(-2,2,(test_cases,action_horizon,1,action_size))
                 test_action.astype(float)
-                # for i in range(test_cases):
-                #     for j in range(action_horizon):
-                #         action = torch.from_numpy(test_action[i,j])
-                #         action = action.float()
-                #         # print(action.dtype)
-                #         # print(obs.dtype)
-                #         input_layer_state = torch.cat([obs,action], 1)
-                #         obs = pred_model.predict(input_layer_state, deterministic=True)
-                #         #obs_data = obs.numpy()
-                #         # we might consider some rewards at now
-                #         total_reward += 10*(-5-obs[0][0].item())
-                #         total_reward += -10000*(abs(obs[0][1].item()))
-                #     total_reward_list.append(total_reward)
-                #index = total_reward_list.index(max(total_reward_list))
-                # action_numpy = test_action[index, 0]
-                # action = torch.from_numpy(action_numpy)
+                for i in range(test_cases):
+                    for j in range(action_horizon):
+                        action = torch.from_numpy(test_action[i,j])
+                        action = action.float()
+                        # print(action.dtype)
+                        # print(obs.dtype)
+                        input_layer_state = torch.cat([obs,action], 1)
+                        next_obs_numpy = np.zeros((1,output_states_num))
+                        for pred_model in pred_models:
+                            next_obs_numpy += pred_model.predict(input_layer_state, deterministic=True).detach().numpy()[0]
+                        next_obs_numpy /= total_models
+                        #obs_data = obs.numpy()
+                        # we might consider some rewards at now
+                        # total_reward += 10*(-5-obs[0][0].item())
+                        print('next')
+                        print(next_obs_numpy[0][1])
+                        total_reward += -10*(abs(next_obs_numpy[0][1].item()))
+                    total_reward_list.append(total_reward)
+                index = total_reward_list.index(max(total_reward_list))
+                action_numpy = test_action[index, 0]
+                action = torch.from_numpy(action_numpy)
             # reward = 10*(-5-carpos[0]) # the reward at the racecar and might do something with field
             
             # end mpc function
@@ -221,15 +229,15 @@ def main():
             # print(obs)
             print('next_obs_numpy')
             print(next_obs_numpy)
-            next_state_pred_numpy = next_state_pred #.detach().numpy()[0]
+            #next_state_pred_numpy = next_state_pred #.detach().numpy()[0]
             # print('next_state_pred')
             # print(next_state_pred_numpy)
             # next_state_pred_numpy[0] = (next_state_pred_numpy[0]*sigma_array[0] + mu_array[0])
             # next_state_pred_numpy[1] = (next_state_pred_numpy[1]*sigma_array[1] + mu_array[1])
-            print('next_state_pred')
-            print(next_state_pred_numpy)
-            # rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
-            #                 action_log_prob, value, reward, masks, bad_masks)
+            # print('next_state_pred')
+            # print(next_state_pred_numpy)
+            rollouts.insert(obs, next_state_pred, recurrent_hidden_states, action,
+                            action_log_prob, value, reward, masks, bad_masks)
 
         with torch.no_grad():
             next_value = actor_critic.get_value(
@@ -255,7 +263,7 @@ def main():
         rollouts.compute_returns(next_value, args.use_gae, args.gamma,
                                  args.gae_lambda, args.use_proper_time_limits)
 
-        value_loss, action_loss, dist_entropy, prediction_loss = agent.update(rollouts)
+        value_loss, action_loss, dist_entropy = agent.update(rollouts)
 
         rollouts.after_update()
 
@@ -289,8 +297,8 @@ def main():
                         np.median(episode_rewards), np.min(episode_rewards),
                         np.max(episode_rewards), dist_entropy, value_loss,
                         action_loss))
-            print('prediction loss')
-            print(prediction_loss)
+            # print('prediction loss')
+            # print(prediction_loss)
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):

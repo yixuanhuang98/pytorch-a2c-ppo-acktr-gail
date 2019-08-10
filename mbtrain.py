@@ -34,15 +34,16 @@ def load(data_dir, args):
     # Ss = np.load(data_dir+"obs_"+args.env_name+".npy")
     # As = np.load(data_dir+"ac_"+args.env_name+".npy")
     #array = np.loadtxt('/Users/huangyixuan/txt_result/test_big')
-    array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_10')
+    array = np.loadtxt('/Users/huangyixuan/txt_result/test')
     #array = np.loadtxt('/home/gao-4144/txt_result/test_1')
     #array = np.loadtxt('/Users/huangyixuan/txt_result/halfcheetah_test')
     #array = np.loadtxt('/Users/huangyixuan/txt_result/racecar_7_new')
     for i in range(0):
         array[:,i] = normalize(array[:,i],i)
     print(array.shape)
-    Ss = array[:,:6]
-    As = array[:,-2:]
+    Ss = array[1:,:6]
+    Ss[:,:6] = array[1:,:6] #- array[:-1,:6]
+    As = array[1:,-2:]
     # print(Ss)
     # print(As)
     # print(Ss.shape())
@@ -58,8 +59,12 @@ def load(data_dir, args):
     #index = np.ravel(np.argwhere(Ds))
 
 
+    # S = Ss[1:-1,:] - Ss[:-2,:]
+    # A = As[1:-1,:]
+
     S = Ss[:-1,:]
     A = As[:-1,:]
+
     #index = index + 1
     S_primes = Ss[1:,:]
     SA = np.concatenate((S,A),1)
@@ -72,6 +77,7 @@ def load(data_dir, args):
     return SA, S_primes
 
 def main():
+    
     args = get_args()
 
     torch.manual_seed(args.seed)
@@ -118,7 +124,7 @@ def main():
     test_SPs = SPs[train_index:]
     SAs= SAs[:train_index]
     SPs = SPs[:train_index]
-    total_models = 5
+    total_models = 1
     errors = []
     models = [Model(
         envs.observation_space.shape,
@@ -145,7 +151,8 @@ def main():
                 y = torch.tensor(SPs[j*batch_size:(j+1)*batch_size]).float()
 
             
-
+            x.to(device)
+            y.to(device)
             optimizer.zero_grad()
             for model in models:
                 log_prob = model.evaluate(x,y)
@@ -165,7 +172,7 @@ def main():
             test_error = test_error + loss_criterian(model.predict(x, deterministic=True), y)
         test_error = test_error / total_models
         errors.append(test_error)
-        if len(errors) > 40:
+        if len(errors) > 20:
             if errors[-1] > errors[-2] and  errors[-2] > errors[-3]:
                 break
 
